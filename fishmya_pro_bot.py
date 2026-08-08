@@ -42,10 +42,9 @@ def get_keyboard() -> InlineKeyboardMarkup:
         [InlineKeyboardButton("Stop Bot 🛑", callback_data="stop_bot")]
     ])
 
-async def update_status(context: ContextTypes.DEFAULT_TYPE, text: str, page=None):
+async def update_status(context: ContextTypes.DEFAULT_TYPE, text: str):
     global status_message_id
     try:
-        # Status text ပို့ခြင်း သို့မဟုတ် update လုပ်ခြင်း
         if status_message_id:
             try:
                 await context.bot.edit_message_text(chat_id=CHAT_ID, message_id=status_message_id, text=text, reply_markup=get_keyboard())
@@ -55,15 +54,19 @@ async def update_status(context: ContextTypes.DEFAULT_TYPE, text: str, page=None
         else:
             msg = await context.bot.send_message(chat_id=CHAT_ID, text=text, reply_markup=get_keyboard())
             status_message_id = msg.message_id
-
-        # Page object ရှိပါက Screenshot ရိုက်ပြီး Telegram သို့ ပို့မည်
-        if page:
-            screenshot_path = "/tmp/screenshot.png"
-            await page.screenshot(path=screenshot_path)
-            with open(screenshot_path, "rb") as photo:
-                await context.bot.send_photo(chat_id=CHAT_ID, photo=photo, caption=f"📸 Screenshot: {text}")
     except Exception as e:
-        logging.error(f"Status update/screenshot error: {e}")
+        logging.error(f"Status update error: {e}")
+
+async def send_screenshot(context: ContextTypes.DEFAULT_TYPE, page, caption: str):
+    try:
+        # Action အားလုံး ပြီးဆုံးပြီး screen တည်ငြိမ်သွားစေရန် ၂ စက္ကန့် စောင့်ပါမည်
+        await asyncio.sleep(2)
+        screenshot_path = "/tmp/screenshot.png"
+        await page.screenshot(path=screenshot_path)
+        with open(screenshot_path, "rb") as photo:
+            await context.bot.send_photo(chat_id=CHAT_ID, photo=photo, caption=f"📸 {caption}")
+    except Exception as e:
+        logging.error(f"Screenshot error: {e}")
 
 async def game_automation(context: ContextTypes.DEFAULT_TYPE):
     global bot_running
@@ -74,42 +77,50 @@ async def game_automation(context: ContextTypes.DEFAULT_TYPE):
                 browser_context = await browser.new_context(viewport={'width': 1000, 'height': 1000})
                 page = await browser_context.new_page()
                 
-                await update_status(context, "🔄 ဂိမ်းထဲဝင်နေပါပြီ...", page)
+                await update_status(context, "🔄 ဂိမ်းထဲဝင်နေပါပြီ...")
                 await page.goto(GAME_URL, timeout=60000)
-                await asyncio.sleep(30)
-                await update_status(context, "🌐 ဂိမ်းသို့ အောင်မြင်စွာ ရောက်ရှိပါပြီ။", page)
+                await asyncio.sleep(30) # ဂိမ်း load လုပ်ရန် စောင့်ခြင်း
+                
+                await update_status(context, "🌐 ဂိမ်းသို့ အောင်မြင်စွာ ရောက်ရှိပါပြီ။")
+                await send_screenshot(context, page, "ဂိမ်း စတင်ဝင်ရောက်ပြီးချိန်")
                 
                 # Close Popups
-                await update_status(context, "🧹 Popup များပိတ်နေပါသည်...", page)
+                await update_status(context, "🧹 Popup များပိတ်နေပါသည်...")
                 for _ in range(3):
                     await page.mouse.click(*COORDS["close_popup_blue"])
                     await asyncio.sleep(2)
                     await page.mouse.click(*COORDS["close_popup_purple"])
                     await asyncio.sleep(2)
                 
+                await send_screenshot(context, page, "Popup များ ပိတ်ပြီးနောက်")
+                
                 # Daily Reward
-                await update_status(context, "🎁 Daily Reward ယူနေပါသည်...", page)
+                await update_status(context, "🎁 Daily Reward ယူနေပါသည်...")
                 await page.mouse.click(*COORDS["daily_reward_icon"])
                 await asyncio.sleep(5)
                 for day in ["check_in_day_1", "check_in_day_2", "check_in_day_3", "check_in_day_4", "check_in_day_5", "check_in_day_6", "check_in_day_7"]:
                     await page.mouse.click(*COORDS[day])
                     await asyncio.sleep(1)
-                await update_status(context, "✅ Daily Reward ယူပြီးပါပြီ။", page)
+                
+                await send_screenshot(context, page, "Daily Reward ယူပြီးနောက်")
                 
                 # Enter Game
-                await update_status(context, "🎮 Fish Hunter ထဲဝင်နေပါသည်...", page)
+                await update_status(context, "🎮 Fish Hunter ထဲဝင်နေပါသည်...")
                 await page.mouse.click(*COORDS["game_card_fish_hunter"])
                 await asyncio.sleep(15)
                 await page.mouse.click(*COORDS["close_mission_popup"])
                 await asyncio.sleep(2)
-                await update_status(context, "🎣 Fish Hunter ထဲသို့ ရောက်ရှိပါပြီ။", page)
+                
+                await send_screenshot(context, page, "Fish Hunter ဂိမ်းတွင်းသို့ ရောက်ရှိချိန်")
                 
                 # Auto Fishing
-                await update_status(context, "🎣 အလိုအလျောက် ငါးဖမ်းနေပါသည် (X4 နှိပ်နေသည်)...", page)
+                await update_status(context, "🎣 အလိုအလျောက် ငါးဖမ်းနေပါသည် (X4 နှိပ်နေသည်)...")
                 await page.mouse.click(*COORDS["auto_button"])
                 await asyncio.sleep(2)
                 await page.mouse.click(*COORDS["target_button"])
                 await asyncio.sleep(2)
+                
+                await send_screenshot(context, page, "Auto နှင့် Target ဖွင့်ပြီးချိန်")
                 
                 # Loop X4
                 counter = 0
@@ -120,7 +131,8 @@ async def game_automation(context: ContextTypes.DEFAULT_TYPE):
                         await update_status(context, f"✅ ငါးဖမ်းနေသည်မှာ {counter} စက္ကန့်ရှိပါပြီ...")
                     
                     if counter % 300 == 0:  # Every 5 mins, take screenshot & refresh
-                        await update_status(context, "🔄 ၅ မိနစ်ပြည့်၍ အခြေအနေ screenshot ရိုက်ထားပါသည်။", page)
+                        await update_status(context, "🔄 ၅ မိနစ်ပြည့်၍ အခြေအနေ screenshot ရိုက်ထားပါသည်။")
+                        await send_screenshot(context, page, f"ငါးဖမ်းနေဆဲ ({counter} စက္ကန့်)")
                         break 
                     
                     await asyncio.sleep(1)
