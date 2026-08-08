@@ -81,7 +81,10 @@ async def game_automation(context):
             async with async_playwright() as p:
                 await update_status(context, "🌐 Browser ဖွင့်နေပါပြီ...")
                 browser = await p.chromium.launch(headless=True)
-                ctx = await browser.new_context(viewport={'width': 1000, 'height': 1000})
+                ctx = await browser.new_context(
+                    viewport={'width': 1000, 'height': 1000},
+                    user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Mobile/15E148 Safari/604.1"
+                )
                 page = await ctx.new_page()
                 
                 await update_status(context, "🔄 ဂိမ်းထဲဝင်နေပါပြီ (URL သို့ သွားနေသည်)...")
