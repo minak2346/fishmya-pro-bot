@@ -32,7 +32,7 @@ WS_HEADERS = [
 ]
 
 # ==================== RATE CONTROL ====================
-CALIBRATION_REQUESTS = 4000     # စမ်းသပ်မယ့် request
+CALIBRATION_REQUESTS = 1000     # စမ်းသပ်မယ့် request
 MIN_ACCEPTED = 50               # အနည်းဆုံး လက်ခံရမယ့်အရေအတွက်
 INITIAL_RATE = 150              # Default rate
 RECALIBRATE_EVERY = 300         # 5 မိနစ်တစ်ခါ re-calibrate
@@ -301,8 +301,8 @@ def verify_pkg5():
 # ==================== CALIBRATION ====================
 def calibrate_rate(ws):
     """
-    Send 4000 requests, count accepted, return (accepted, new_rate)
-    - accepted < 50 → retry with 4000
+    Send 1000 requests, count accepted, return (accepted, new_rate)
+    - accepted < 50 → retry with 1000
     - accepted >= 50 → use accepted as new rate
     """
     logger.info(f"🧪 CALIBRATION: Sending {CALIBRATION_REQUESTS} requests...")
@@ -379,7 +379,7 @@ def calibrate_rate(ws):
 
     # ---- Decide new rate ----
     if accepted < MIN_ACCEPTED:
-        # လက်ခံမှု နည်း → 4000 နဲ့ ပြန်စမ်း
+        # လက်ခံမှု နည်း → 1000 နဲ့ ပြန်စမ်း
         logger.warning(f"⚠️ Accepted {accepted} < {MIN_ACCEPTED} → retry with {CALIBRATION_REQUESTS}")
         return accepted, CALIBRATION_REQUESTS
     else:
